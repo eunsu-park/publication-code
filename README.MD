@@ -1,0 +1,101 @@
+# Published Paper Code Repository
+
+이 레포지터리는 제가 출판한(published) 논문에서 사용한 코드들을 정리해 둔 것입니다. 코드는 제가 작성했으며, AI의 검수를 통해 정리·정돈했습니다.
+
+## English
+
+This repository organizes the code used in my published papers. The code was written by me and curated with the help of AI review.
+
+---
+
+## Projects
+
+| Directory | Publication | Topic | Status |
+|-----------|-------------|-------|--------|
+| [`euv-pixel-translation/`](euv-pixel-translation/) | ApJS 264, 33 (2023) | EUV pixel-level translation using FCN | Implemented |
+| [`farside-magnetogram/`](farside-magnetogram/) | Nature Astronomy 3, 397 (2019) | Far-side magnetogram generation | Implemented |
+| [`flare-forecasting/`](flare-forecasting/) | ApJ 869, 91 (2018) | Solar flare prediction | Implemented |
+| [`magnetogram-denoising/`](magnetogram-denoising/) | ApJL 891, L4 (2020) | Magnetogram noise reduction | Implemented |
+| [`magnetogram-to-euv/`](magnetogram-to-euv/) | ApJL 884, L23 (2019) | Magnetogram to EUV image translation | Implemented |
+
+---
+
+## Project Details
+
+### EUV Pixel-to-Pixel Translation (2023)
+
+**Paper:** Park et al. (2023), "Pixel-to-pixel Translation of Solar Extreme-ultraviolet Images for DEMs by Fully Connected Networks", *ApJS*, 264, 33
+
+**DOI:** [10.3847/1538-4365/aca902](https://doi.org/10.3847/1538-4365/aca902)
+
+**Summary:** Pixel-to-pixel image translation among solar EUV images using Fully Connected Networks. Translates SDO/AIA 3 channels (17.1, 19.3, 21.1 nm) to other 3 channels (9.4, 13.1, 33.5 nm) for DEM analysis.
+
+**Network:** FCN-based encoder-decoder with U-Net style skip connections
+
+---
+
+### Magnetogram to UV/EUV Generation (2019)
+
+**Paper:** Park et al. (2019), "Generation of Solar UV and EUV Images from SDO/HMI Magnetograms by Deep Learning", *ApJL*, 884, L23
+
+**DOI:** [10.3847/2041-8213/ab46bb](https://doi.org/10.3847/2041-8213/ab46bb)
+
+**Summary:** Deep learning-based image-to-image translation from SDO/HMI magnetograms to SDO/AIA UV/EUV images (9 passbands). Compares L1-only model with L1+cGAN model.
+
+**Network:** Pix2Pix (U-Net Generator + PatchGAN Discriminator)
+
+---
+
+### Far-side Magnetogram Generation (2019)
+
+**Paper:** Kim, Park et al. (2019), "Solar farside magnetograms from deep learning analysis of STEREO/EUVI data", *Nature Astronomy*, 3, 397
+
+**DOI:** [10.1038/s41550-019-0711-5](https://doi.org/10.1038/s41550-019-0711-5)
+
+**Summary:** Generation of solar far-side magnetograms from STEREO/EUVI 304nm images using cGAN. Trained on near-side SDO/AIA 304nm and SDO/HMI pairs, then applied to far-side STEREO/EUVI data.
+
+**Network:** Pix2Pix (U-Net Generator + PatchGAN Discriminator)
+
+---
+
+### Solar Flare Forecasting (2018)
+
+**Paper:** Park et al. (2018), "Application of the Deep Convolutional Neural Network to the Forecast of Solar Flare Occurrence Using Full-disk Solar Magnetograms", *ApJ*, 869, 91
+
+**DOI:** [10.3847/1538-4357/aaed40](https://doi.org/10.3847/1538-4357/aaed40)
+
+**Summary:** CNN-based binary classification for solar flare prediction (≥C1.0 class) using full-disk magnetograms from SOHO/MDI and SDO/HMI without preprocessing.
+
+**Network:** GoogLeNet + DenseNet combination (proposed model with inception-style blocks and dense connectivity)
+
+---
+
+### Magnetogram Denoising (2020)
+
+**Paper:** Park et al. (2020), "De-noising SDO/HMI Solar Magnetograms by Image Translation Method Based on Deep Learning", *ApJL*, 891, L4
+
+**DOI:** [10.3847/2041-8213/ab74d2](https://doi.org/10.3847/2041-8213/ab74d2)
+
+**Summary:** DCGAN-based noise reduction for SDO/HMI magnetograms. Translates single noisy magnetograms to de-noised equivalents (21-frame stacked quality). Reduces noise level from 8.66 G to 3.21 G.
+
+**Network:** Pix2Pix / DCGAN (U-Net Generator + PatchGAN Discriminator)
+
+---
+
+## Requirements
+
+- Python 3.8+
+- PyTorch 1.9+
+- NumPy
+- SunPy
+- AIAPy (for EUV data processing)
+
+## License
+
+MIT License
+
+## Author
+
+**Eunsu Park**
+- Korea Astronomy and Space Science Institute (KASI)
+- [ORCID: 0000-0003-0969-286X](https://orcid.org/0000-0003-0969-286X)
