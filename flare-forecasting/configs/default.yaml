@@ -1,0 +1,48 @@
+# Solar Flare Forecasting Configuration
+# Park et al. (2018), ApJ, 869, 91
+
+# Model architecture
+model_type: proposed  # alexnet, googlenet, proposed
+in_channels: 1        # Magnetogram
+num_classes: 2        # Binary: Flare / No-flare
+
+# Proposed model specific
+growth_rate: 16
+num_modules: 4
+blocks_per_module: 6
+init_features: 16
+
+# Training parameters
+epochs: 100
+batch_size: 16
+lr: 0.001
+weight_decay: 0.0001
+momentum: 0.9
+
+# Learning rate scheduler
+lr_scheduler: step  # step, cosine, none
+lr_step_size: 30
+lr_gamma: 0.1
+
+# Loss and class balancing
+loss_type: cross_entropy
+class_weight: true  # Use class weights for imbalanced data
+
+# Data
+input_size: 1024
+data_dir: ./data
+flare_threshold: C1.0  # Minimum flare class
+
+# Data augmentation
+augmentation: true
+random_flip: true
+random_rotation: true
+
+# Output
+save_dir: ./checkpoints
+log_interval: 50
+save_interval: 10
+
+# Device
+device: cuda
+num_workers: 4

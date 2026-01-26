@@ -1,0 +1,38 @@
+# Magnetogram to UV/EUV Image Translation Configuration
+# Park et al. (2019), ApJL, 884, L23
+
+# Model architecture
+in_channels: 1   # Magnetogram
+out_channels: 1  # Single EUV/UV passband
+ngf: 64          # Generator base features
+ndf: 64          # Discriminator base features
+
+# Training mode
+use_gan: true    # Model B (L1+cGAN) vs Model A (L1 only)
+
+# Training parameters
+epochs: 200
+batch_size: 1
+lr: 0.0002
+beta1: 0.5
+beta2: 0.999
+
+# Loss weights
+lambda_l1: 100.0
+
+# Target passband (one of 9 passbands)
+# Options: 94, 131, 171, 193, 211, 304, 335, 1600, 1700
+target_passband: 304
+
+# Data
+input_size: 1024
+data_dir: ./data
+
+# Output
+save_dir: ./checkpoints
+log_interval: 100
+save_interval: 10
+
+# Device
+device: cuda
+num_workers: 4

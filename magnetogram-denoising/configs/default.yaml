@@ -1,0 +1,33 @@
+# Magnetogram Denoising Configuration
+# Park et al. (2020), ApJL, 891, L4
+
+# Model architecture
+in_channels: 1   # Noisy magnetogram
+out_channels: 1  # De-noised magnetogram
+ngf: 64          # Generator base features
+ndf: 64          # Discriminator base features
+
+# Training parameters
+iterations: 500000  # Total iterations
+batch_size: 4
+lr: 0.0002
+beta1: 0.5
+beta2: 0.999
+
+# Loss weights
+lambda_l1: 100.0
+
+# Data
+input_size: 256
+data_dir: ./data
+data_range: 100.0   # -100 to +100 G
+stack_frames: 21    # Target: 21-frame stacked magnetogram
+
+# Output
+save_dir: ./checkpoints
+log_interval: 1000
+save_interval: 10000
+
+# Device
+device: cuda
+num_workers: 4

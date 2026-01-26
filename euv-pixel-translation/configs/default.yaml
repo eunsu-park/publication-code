@@ -1,0 +1,30 @@
+# EUV Pixel-to-Pixel Translation Configuration
+# Park et al. (2023), ApJS, 264, 33
+
+# Model architecture
+model_type: fcn  # fcn or cnn
+in_channels: 3   # AIA 17.1, 19.3, 21.1 nm
+out_channels: 3  # AIA 9.4, 13.1, 33.5 nm
+
+# Training parameters
+epochs: 100
+batch_size: 32
+lr: 0.0001
+weight_decay: 0.00001
+
+# Loss function
+loss_type: mse  # mse or l1
+
+# Data
+data_dir: ./data
+train_ratio: 0.8
+val_ratio: 0.1
+
+# Output
+save_dir: ./checkpoints
+log_interval: 100
+save_interval: 10
+
+# Device
+device: cuda
+num_workers: 4

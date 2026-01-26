@@ -84,11 +84,39 @@ This repository organizes the code used in my published papers. The code was wri
 
 ## Requirements
 
+### Core Dependencies
+
 - Python 3.8+
 - PyTorch 1.9+
 - NumPy
 - SunPy
 - AIAPy (for EUV data processing)
+
+### Package Dependencies
+
+| Package | Description | Installation |
+|---------|-------------|--------------|
+| [egghouse](https://github.com/eunsu-park/egghouse) | Personal utility library for solar physics research | `pip install git+https://github.com/eunsu-park/egghouse.git` |
+
+**egghouse** provides shared utilities used across all projects:
+
+| Module | Usage |
+|--------|-------|
+| `egghouse.config` | Configuration management (BaseConfig class for YAML/CLI support) |
+| `egghouse.sdo` | SDO/AIA, SDO/HMI data processing |
+| `egghouse.image` | Image processing utilities |
+
+#### Installation
+
+```bash
+# Install from GitHub
+pip install git+https://github.com/eunsu-park/egghouse.git
+
+# Or for development
+git clone https://github.com/eunsu-park/egghouse.git
+cd egghouse
+pip install -e .
+```
 
 ## License
 
