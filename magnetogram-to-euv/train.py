@@ -1,210 +1,36 @@
 """
-Training Pipeline for Far-side Magnetogram Generation.
+Training Script for Magnetogram to UV/EUV Image Translation.
 
-Kim, Park et al. (2019), Nature Astronomy, 3, 397
-https://doi.org/10.1038/s41550-019-0711-5
+Park et al. (2019), ApJL, 884, L23
+https://doi.org/10.3847/2041-8213/ab46bb
 
-This pipeline trains a Pix2Pix model to generate magnetograms from EUV images.
-- Train/Valid Input: SDO/AIA 304 nm
-- Train/Valid Target: SDO/HMI magnetogram
-- Test Input: STEREO/EUVI 304 nm (far-side)
+This script trains a Pix2Pix model to generate EUV/UV images from magnetograms.
+- Input: SDO/HMI magnetogram
+- Output: SDO/AIA EUV/UV images (1 or more wavelengths)
+
+Usage:
+    python train.py --config configs/default.yaml
+    python train.py --config configs/default.yaml --use_gan true --target_wavelengths "94,131,171"
 """
 
 import csv
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-import numpy as np
 import torch
 import torch.nn as nn
 from torch.optim import Adam
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 from config import TrainConfig
+from dataset import TrainDataset, ValidationDataset
 from networks import Generator, Discriminator
-
-
-def normalize_euv(data: np.ndarray) -> np.ndarray:
-    """
-    Normalize EUV 304 nm image.
-
-    Args:
-        data: Raw EUV data.
-
-    Returns:
-        Normalized data in approximately [-1, 1] range.
-    """
-    data = np.clip(data + 1, 1, None)
-    data = np.log2(data)
-    data = (data / 7) - 1.0
-    return data
-
-
-def normalize_magnetogram(data: np.ndarray, data_range: float = 100.0) -> np.ndarray:
-    """
-    Normalize magnetogram.
-
-    Args:
-        data: Raw magnetogram data.
-        data_range: Normalization factor.
-
-    Returns:
-        Normalized data.
-    """
-    return data / data_range
-
-
-def denormalize_magnetogram(data: np.ndarray, data_range: float = 100.0) -> np.ndarray:
-    """
-    Denormalize magnetogram.
-
-    Args:
-        data: Normalized magnetogram data.
-        data_range: Normalization factor.
-
-    Returns:
-        Denormalized data.
-    """
-    return data * data_range
-
-
-class TrainDataset(Dataset):
-    """
-    Training dataset for far-side magnetogram generation.
-
-    Loads .npz files containing AIA 304 nm and HMI magnetogram pairs.
-    - Input: aia_304 (1024×1024)
-    - Target: hmi_mag (1024×1024)
-
-    Args:
-        data_dir: Directory containing .npz files.
-        data_range: Magnetogram normalization factor (default: 100.0).
-    """
-
-    def __init__(
-        self,
-        data_dir: str,
-        data_range: float = 100.0,
-    ) -> None:
-        super().__init__()
-        self.data_dir = Path(data_dir)
-        self.data_range = data_range
-        self.file_list = sorted(self.data_dir.glob("*.npz"))
-
-        if len(self.file_list) == 0:
-            raise ValueError(f"No .npz files found in {data_dir}")
-
-    def __len__(self) -> int:
-        return len(self.file_list)
-
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        # Load npz file
-        data = np.load(self.file_list[idx])
-
-        # Input: AIA 304 nm
-        aia_304 = data["aia_304"].astype(np.float32)
-        aia_304 = normalize_euv(aia_304)
-
-        # Target: HMI magnetogram
-        hmi_mag = data["hmi_mag"].astype(np.float32)
-        hmi_mag = normalize_magnetogram(hmi_mag, self.data_range)
-
-        # Add channel dimension: (H, W) -> (1, H, W)
-        if aia_304.ndim == 2:
-            aia_304 = aia_304[np.newaxis, ...]
-        if hmi_mag.ndim == 2:
-            hmi_mag = hmi_mag[np.newaxis, ...]
-
-        return (
-            torch.from_numpy(aia_304).float(),
-            torch.from_numpy(hmi_mag).float(),
-        )
-
-
-class ValidationDataset(Dataset):
-    """
-    Validation dataset for far-side magnetogram generation.
-
-    Same format as TrainDataset.
-    """
-
-    def __init__(
-        self,
-        data_dir: str,
-        data_range: float = 100.0,
-    ) -> None:
-        super().__init__()
-        self.data_dir = Path(data_dir)
-        self.data_range = data_range
-        self.file_list = sorted(self.data_dir.glob("*.npz"))
-
-        if len(self.file_list) == 0:
-            raise ValueError(f"No .npz files found in {data_dir}")
-
-    def __len__(self) -> int:
-        return len(self.file_list)
-
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        data = np.load(self.file_list[idx])
-
-        aia_304 = data["aia_304"].astype(np.float32)
-        aia_304 = normalize_euv(aia_304)
-
-        hmi_mag = data["hmi_mag"].astype(np.float32)
-        hmi_mag = normalize_magnetogram(hmi_mag, self.data_range)
-
-        if aia_304.ndim == 2:
-            aia_304 = aia_304[np.newaxis, ...]
-        if hmi_mag.ndim == 2:
-            hmi_mag = hmi_mag[np.newaxis, ...]
-
-        return (
-            torch.from_numpy(aia_304).float(),
-            torch.from_numpy(hmi_mag).float(),
-        )
-
-
-class TestDataset(Dataset):
-    """
-    Test dataset for far-side magnetogram generation.
-
-    Loads .npz files containing STEREO/EUVI 304 nm images.
-    - Input: euvi_304 (1024×1024)
-    - No target (inference only)
-
-    Args:
-        data_dir: Directory containing .npz files.
-    """
-
-    def __init__(self, data_dir: str) -> None:
-        super().__init__()
-        self.data_dir = Path(data_dir)
-        self.file_list = sorted(self.data_dir.glob("*.npz"))
-
-        if len(self.file_list) == 0:
-            raise ValueError(f"No .npz files found in {data_dir}")
-
-    def __len__(self) -> int:
-        return len(self.file_list)
-
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, str]:
-        filepath = self.file_list[idx]
-        data = np.load(filepath)
-
-        # Input: EUVI 304 nm (same normalization as AIA 304)
-        euvi_304 = data["euvi_304"].astype(np.float32)
-        euvi_304 = normalize_euv(euvi_304)
-
-        if euvi_304.ndim == 2:
-            euvi_304 = euvi_304[np.newaxis, ...]
-
-        return torch.from_numpy(euvi_304).float(), filepath.stem
 
 
 class Trainer:
     """
-    Trainer for Pix2Pix far-side magnetogram generation model.
+    Trainer for Pix2Pix magnetogram-to-EUV model.
 
     Handles training loop, validation, checkpointing, and logging.
 
@@ -247,6 +73,7 @@ class Trainer:
         self.criterion_gan = nn.BCELoss()
         self.criterion_l1 = nn.L1Loss()
         self.lambda_l1 = config.lambda_l1
+        self.use_gan = config.use_gan
 
         # Data loaders
         self.train_loader = train_loader
@@ -267,65 +94,71 @@ class Trainer:
         self.best_val_loss = float("inf")
 
     def train_step(
-        self, euv: torch.Tensor, magnetogram: torch.Tensor
+        self, magnetogram: torch.Tensor, euv: torch.Tensor
     ) -> Tuple[float, float]:
         """
         Single training step.
 
         Args:
-            euv: EUV 304 nm image batch.
-            magnetogram: Target magnetogram batch.
+            magnetogram: HMI magnetogram batch.
+            euv: Target AIA EUV batch.
 
         Returns:
             Tuple of (generator_loss, discriminator_loss).
         """
-        euv = euv.to(self.device)
         magnetogram = magnetogram.to(self.device)
+        euv = euv.to(self.device)
 
-        # ---------------------
-        # Train Discriminator
-        # ---------------------
-        self.optimizer_d.zero_grad()
+        # Generate fake EUV
+        fake = self.generator(magnetogram)
 
-        # Generate fake magnetogram
-        fake = self.generator(euv)
+        loss_d = torch.tensor(0.0)
 
-        # Real pair
-        real_pair = torch.cat([euv, magnetogram], dim=1)
-        pred_real = self.discriminator(real_pair)
-        real_label = torch.ones_like(pred_real)
-        loss_d_real = self.criterion_gan(pred_real, real_label)
+        if self.use_gan:
+            # ---------------------
+            # Train Discriminator
+            # ---------------------
+            self.optimizer_d.zero_grad()
 
-        # Fake pair
-        fake_pair = torch.cat([euv, fake.detach()], dim=1)
-        pred_fake = self.discriminator(fake_pair)
-        fake_label = torch.zeros_like(pred_fake)
-        loss_d_fake = self.criterion_gan(pred_fake, fake_label)
+            # Real pair
+            real_pair = torch.cat([magnetogram, euv], dim=1)
+            pred_real = self.discriminator(real_pair)
+            real_label = torch.ones_like(pred_real)
+            loss_d_real = self.criterion_gan(pred_real, real_label)
 
-        # Total discriminator loss
-        loss_d = (loss_d_real + loss_d_fake) * 0.5
-        loss_d.backward()
-        self.optimizer_d.step()
+            # Fake pair
+            fake_pair = torch.cat([magnetogram, fake.detach()], dim=1)
+            pred_fake = self.discriminator(fake_pair)
+            fake_label = torch.zeros_like(pred_fake)
+            loss_d_fake = self.criterion_gan(pred_fake, fake_label)
+
+            # Total discriminator loss
+            loss_d = (loss_d_real + loss_d_fake) * 0.5
+            loss_d.backward()
+            self.optimizer_d.step()
 
         # -----------------
         # Train Generator
         # -----------------
         self.optimizer_g.zero_grad()
 
-        # GAN loss
-        fake_pair = torch.cat([euv, fake], dim=1)
-        pred_fake = self.discriminator(fake_pair)
-        loss_g_gan = self.criterion_gan(pred_fake, real_label)
-
         # L1 loss
-        loss_g_l1 = self.criterion_l1(fake, magnetogram)
+        loss_g_l1 = self.criterion_l1(fake, euv)
 
-        # Total generator loss
-        loss_g = loss_g_gan + self.lambda_l1 * loss_g_l1
+        if self.use_gan:
+            # GAN loss
+            fake_pair = torch.cat([magnetogram, fake], dim=1)
+            pred_fake = self.discriminator(fake_pair)
+            loss_g_gan = self.criterion_gan(pred_fake, real_label)
+            loss_g = loss_g_gan + self.lambda_l1 * loss_g_l1
+        else:
+            # L1 only (Model A)
+            loss_g = loss_g_l1
+
         loss_g.backward()
         self.optimizer_g.step()
 
-        return loss_g.item(), loss_d.item()
+        return loss_g.item(), loss_d.item() if self.use_gan else 0.0
 
     def validate(self) -> Dict[str, float]:
         """
@@ -340,15 +173,15 @@ class Trainer:
         total_samples = 0
 
         with torch.no_grad():
-            for euv, magnetogram in self.val_loader:
-                euv = euv.to(self.device)
+            for magnetogram, euv in self.val_loader:
                 magnetogram = magnetogram.to(self.device)
+                euv = euv.to(self.device)
 
-                fake = self.generator(euv)
-                loss_l1 = self.criterion_l1(fake, magnetogram)
+                fake = self.generator(magnetogram)
+                loss_l1 = self.criterion_l1(fake, euv)
 
-                total_l1 += loss_l1.item() * euv.size(0)
-                total_samples += euv.size(0)
+                total_l1 += loss_l1.item() * magnetogram.size(0)
+                total_samples += magnetogram.size(0)
 
         self.generator.train()
 
@@ -367,14 +200,15 @@ class Trainer:
             Dictionary of training metrics.
         """
         self.generator.train()
-        self.discriminator.train()
+        if self.use_gan:
+            self.discriminator.train()
 
         total_loss_g = 0.0
         total_loss_d = 0.0
         num_batches = 0
 
-        for batch_idx, (euv, magnetogram) in enumerate(self.train_loader):
-            loss_g, loss_d = self.train_step(euv, magnetogram)
+        for batch_idx, (magnetogram, euv) in enumerate(self.train_loader):
+            loss_g, loss_d = self.train_step(magnetogram, euv)
 
             total_loss_g += loss_g
             total_loss_d += loss_d
@@ -384,10 +218,11 @@ class Trainer:
             # Log to tensorboard
             if self.global_step % self.config.log_interval == 0:
                 self.writer.add_scalar("train/loss_g", loss_g, self.global_step)
-                self.writer.add_scalar("train/loss_d", loss_d, self.global_step)
+                if self.use_gan:
+                    self.writer.add_scalar("train/loss_d", loss_d, self.global_step)
 
         avg_loss_g = total_loss_g / num_batches
-        avg_loss_d = total_loss_d / num_batches
+        avg_loss_d = total_loss_d / num_batches if self.use_gan else 0.0
 
         return {"train_loss_g": avg_loss_g, "train_loss_d": avg_loss_d}
 
@@ -407,6 +242,7 @@ class Trainer:
             "optimizer_g_state_dict": self.optimizer_g.state_dict(),
             "optimizer_d_state_dict": self.optimizer_d.state_dict(),
             "best_val_loss": self.best_val_loss,
+            "wavelengths": self.config.wavelength_list,
         }
 
         # Save latest
@@ -465,6 +301,9 @@ class Trainer:
             start_epoch: Starting epoch (for resuming).
         """
         print(f"Starting training from epoch {start_epoch + 1}")
+        print(f"Target wavelengths: {self.config.wavelength_list}")
+        print(f"Output channels: {self.config.out_channels}")
+        print(f"Training mode: {'L1+cGAN' if self.use_gan else 'L1 only'}")
         print(f"Training samples: {len(self.train_loader.dataset)}")
         print(f"Validation samples: {len(self.val_loader.dataset)}")
         print(f"Device: {self.device}")
@@ -481,9 +320,10 @@ class Trainer:
             self.writer.add_scalar(
                 "epoch/train_loss_g", train_metrics["train_loss_g"], epoch
             )
-            self.writer.add_scalar(
-                "epoch/train_loss_d", train_metrics["train_loss_d"], epoch
-            )
+            if self.use_gan:
+                self.writer.add_scalar(
+                    "epoch/train_loss_d", train_metrics["train_loss_d"], epoch
+                )
             self.writer.add_scalar(
                 "epoch/val_l1_loss", val_metrics["val_l1_loss"], epoch
             )
@@ -507,10 +347,11 @@ class Trainer:
             self.history.append(record)
 
             # Print progress
+            d_str = f"D: {train_metrics['train_loss_d']:.4f} " if self.use_gan else ""
             print(
                 f"Epoch [{epoch + 1}/{epochs}] "
                 f"G: {train_metrics['train_loss_g']:.4f} "
-                f"D: {train_metrics['train_loss_d']:.4f} "
+                f"{d_str}"
                 f"Val L1: {val_metrics['val_l1_loss']:.4f} "
                 f"{'*' if is_best else ''}"
             )
@@ -533,14 +374,19 @@ def main() -> None:
     Path(config.save_dir).mkdir(parents=True, exist_ok=True)
     config.to_yaml(str(config_save_path))
 
+    print(f"Target wavelengths: {config.wavelength_list}")
+    print(f"Output channels: {config.out_channels}")
+
     # Create datasets
     train_dataset = TrainDataset(
         data_dir=f"{config.data_dir}/train",
-        data_range=config.data_range,
+        wavelengths=config.wavelength_list,
+        mag_range=config.mag_range,
     )
     val_dataset = ValidationDataset(
         data_dir=f"{config.data_dir}/valid",
-        data_range=config.data_range,
+        wavelengths=config.wavelength_list,
+        mag_range=config.mag_range,
     )
 
     # Create data loaders

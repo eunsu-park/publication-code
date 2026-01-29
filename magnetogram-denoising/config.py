@@ -44,6 +44,9 @@ class TrainConfig(BaseConfig):
     log_interval: int = 1000
     save_interval: int = 10000
 
+    # Checkpoint (for resuming or validation)
+    checkpoint_path: str = "./checkpoints/checkpoint_best.pth"
+
     # Device
     device: str = "cuda"
     num_workers: int = 4
@@ -57,13 +60,15 @@ class InferenceConfig(BaseConfig):
     in_channels: int = 1
     out_channels: int = 1
     ngf: int = 64
-    checkpoint_path: str = "./checkpoints/generator.pth"
+    checkpoint_path: str = "./checkpoints/checkpoint_best.pth"
 
     # Data
     input_size: int = 256
+    data_dir: str = "./data"
     input_path: str = "./data/noisy"
-    output_path: str = "./data/denoised"
+    output_path: str = "./results"
     data_range: float = 100.0
+    batch_size: int = 1
 
     # Device
     device: str = "cuda"

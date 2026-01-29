@@ -48,6 +48,9 @@ class TrainConfig(BaseConfig):
     log_interval: int = 100
     save_interval: int = 10
 
+    # Checkpoint (for resuming or validation)
+    checkpoint_path: str = "./checkpoints/checkpoint_best.pth"
+
     # Device
     device: str = "cuda"
     num_workers: int = 4
@@ -69,20 +72,31 @@ class InferenceConfig(BaseConfig):
 
     # Model
     in_channels: int = 1
-    out_channels: int = 1
     ngf: int = 64
-    checkpoint_path: str = "./checkpoints/generator.pth"
+    checkpoint_path: str = "./checkpoints/checkpoint_best.pth"
 
-    # Target passband
-    target_passband: int = 304
+    # Target wavelengths (comma-separated)
+    target_wavelengths: str = "304"
 
     # Data
-    input_size: int = 1024
-    input_path: str = "./data/magnetogram"
-    output_path: str = "./data/euv"
+    data_dir: str = "./data"
+    mag_range: float = 1000.0
+    output_dir: str = "./results"
+    batch_size: int = 1
 
     # Device
     device: str = "cuda"
+    num_workers: int = 4
+
+    @property
+    def wavelength_list(self) -> list:
+        """Parse target_wavelengths string to list of integers."""
+        return [int(w.strip()) for w in self.target_wavelengths.split(",")]
+
+    @property
+    def out_channels(self) -> int:
+        """Number of output channels based on selected wavelengths."""
+        return len(self.wavelength_list)
 
 
 @dataclass

@@ -1,118 +1,36 @@
 """
-Training Pipeline for Magnetogram Denoising.
+Training Script for Far-side Magnetogram Generation.
 
-Park et al. (2020), ApJL, 891, L4
-https://doi.org/10.3847/2041-8213/ab74d2
+Kim, Park et al. (2019), Nature Astronomy, 3, 397
+https://doi.org/10.1038/s41550-019-0711-5
 
-This pipeline trains a Pix2Pix model to denoise SDO/HMI magnetograms.
-- Input: Single noisy magnetogram (center frame)
-- Target: 21-frame stacked (averaged) magnetogram
+This script trains a Pix2Pix model to generate magnetograms from EUV images.
+- Input: SDO/AIA 304 nm
+- Target: SDO/HMI magnetogram
+
+Usage:
+    python train.py --config configs/default.yaml
+    python train.py --config configs/default.yaml --epochs 200 --lr 0.0001
 """
 
 import csv
-from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
-import numpy as np
 import torch
 import torch.nn as nn
 from torch.optim import Adam
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 from config import TrainConfig
+from dataset import TrainDataset, ValidationDataset
 from networks import Generator, Discriminator
-
-
-class BaseDataset(Dataset):
-    """
-    Base dataset for magnetogram denoising.
-
-    Loads .npy files containing 21-frame magnetogram stacks.
-    - Original shape: (21, 512, 512)
-    - Center crop to: (21, 256, 256)
-    - Input: center frame (index 10)
-    - Target: mean of all 21 frames
-
-    Args:
-        data_dir: Directory containing .npy files.
-        input_size: Size to crop (default: 256).
-        data_range: Normalization factor (default: 100.0).
-    """
-
-    def __init__(
-        self,
-        data_dir: str,
-        input_size: int = 256,
-        data_range: float = 100.0,
-    ) -> None:
-        super().__init__()
-        self.data_dir = Path(data_dir)
-        self.input_size = input_size
-        self.data_range = data_range
-        self.file_list = sorted(self.data_dir.glob("*.npy"))
-
-        if len(self.file_list) == 0:
-            raise ValueError(f"No .npy files found in {data_dir}")
-
-    def __len__(self) -> int:
-        return len(self.file_list)
-
-    def _center_crop(self, data: np.ndarray) -> np.ndarray:
-        """Center crop from 512x512 to input_size x input_size."""
-        _, h, w = data.shape
-        start_h = (h - self.input_size) // 2
-        start_w = (w - self.input_size) // 2
-        return data[
-            :,
-            start_h : start_h + self.input_size,
-            start_w : start_w + self.input_size,
-        ]
-
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        # Load npy file: (21, 512, 512)
-        data = np.load(self.file_list[idx])
-
-        # Center crop: (21, 256, 256)
-        data = self._center_crop(data)
-
-        # Normalize
-        data = data / self.data_range
-
-        # Input: center frame (index 10)
-        input_frame = data[10:11]  # Keep dim: (1, 256, 256)
-
-        # Target: mean of all 21 frames
-        target_frame = data.mean(axis=0, keepdims=True)  # (1, 256, 256)
-
-        return (
-            torch.from_numpy(input_frame).float(),
-            torch.from_numpy(target_frame).float(),
-        )
-
-
-class TrainDataset(BaseDataset):
-    """Training dataset for magnetogram denoising."""
-
-    pass
-
-
-class ValidationDataset(BaseDataset):
-    """Validation dataset for magnetogram denoising."""
-
-    pass
-
-
-class TestDataset(BaseDataset):
-    """Test dataset for magnetogram denoising."""
-
-    pass
 
 
 class Trainer:
     """
-    Trainer for Pix2Pix magnetogram denoising model.
+    Trainer for Pix2Pix far-side magnetogram generation model.
 
     Handles training loop, validation, checkpointing, and logging.
 
@@ -175,37 +93,37 @@ class Trainer:
         self.best_val_loss = float("inf")
 
     def train_step(
-        self, noisy: torch.Tensor, target: torch.Tensor
+        self, euv: torch.Tensor, magnetogram: torch.Tensor
     ) -> Tuple[float, float]:
         """
         Single training step.
 
         Args:
-            noisy: Noisy magnetogram batch.
-            target: Target (stacked) magnetogram batch.
+            euv: EUV 304 nm image batch.
+            magnetogram: Target magnetogram batch.
 
         Returns:
             Tuple of (generator_loss, discriminator_loss).
         """
-        noisy = noisy.to(self.device)
-        target = target.to(self.device)
+        euv = euv.to(self.device)
+        magnetogram = magnetogram.to(self.device)
 
         # ---------------------
         # Train Discriminator
         # ---------------------
         self.optimizer_d.zero_grad()
 
-        # Generate fake image
-        fake = self.generator(noisy)
+        # Generate fake magnetogram
+        fake = self.generator(euv)
 
         # Real pair
-        real_pair = torch.cat([noisy, target], dim=1)
+        real_pair = torch.cat([euv, magnetogram], dim=1)
         pred_real = self.discriminator(real_pair)
         real_label = torch.ones_like(pred_real)
         loss_d_real = self.criterion_gan(pred_real, real_label)
 
         # Fake pair
-        fake_pair = torch.cat([noisy, fake.detach()], dim=1)
+        fake_pair = torch.cat([euv, fake.detach()], dim=1)
         pred_fake = self.discriminator(fake_pair)
         fake_label = torch.zeros_like(pred_fake)
         loss_d_fake = self.criterion_gan(pred_fake, fake_label)
@@ -221,12 +139,12 @@ class Trainer:
         self.optimizer_g.zero_grad()
 
         # GAN loss
-        fake_pair = torch.cat([noisy, fake], dim=1)
+        fake_pair = torch.cat([euv, fake], dim=1)
         pred_fake = self.discriminator(fake_pair)
         loss_g_gan = self.criterion_gan(pred_fake, real_label)
 
         # L1 loss
-        loss_g_l1 = self.criterion_l1(fake, target)
+        loss_g_l1 = self.criterion_l1(fake, magnetogram)
 
         # Total generator loss
         loss_g = loss_g_gan + self.lambda_l1 * loss_g_l1
@@ -248,15 +166,15 @@ class Trainer:
         total_samples = 0
 
         with torch.no_grad():
-            for noisy, target in self.val_loader:
-                noisy = noisy.to(self.device)
-                target = target.to(self.device)
+            for euv, magnetogram in self.val_loader:
+                euv = euv.to(self.device)
+                magnetogram = magnetogram.to(self.device)
 
-                fake = self.generator(noisy)
-                loss_l1 = self.criterion_l1(fake, target)
+                fake = self.generator(euv)
+                loss_l1 = self.criterion_l1(fake, magnetogram)
 
-                total_l1 += loss_l1.item() * noisy.size(0)
-                total_samples += noisy.size(0)
+                total_l1 += loss_l1.item() * euv.size(0)
+                total_samples += euv.size(0)
 
         self.generator.train()
 
@@ -281,8 +199,8 @@ class Trainer:
         total_loss_d = 0.0
         num_batches = 0
 
-        for batch_idx, (noisy, target) in enumerate(self.train_loader):
-            loss_g, loss_d = self.train_step(noisy, target)
+        for batch_idx, (euv, magnetogram) in enumerate(self.train_loader):
+            loss_g, loss_d = self.train_step(euv, magnetogram)
 
             total_loss_g += loss_g
             total_loss_d += loss_d
@@ -392,7 +310,9 @@ class Trainer:
             self.writer.add_scalar(
                 "epoch/train_loss_d", train_metrics["train_loss_d"], epoch
             )
-            self.writer.add_scalar("epoch/val_l1_loss", val_metrics["val_l1_loss"], epoch)
+            self.writer.add_scalar(
+                "epoch/val_l1_loss", val_metrics["val_l1_loss"], epoch
+            )
 
             # Check if best
             is_best = val_metrics["val_l1_loss"] < self.best_val_loss
@@ -442,12 +362,10 @@ def main() -> None:
     # Create datasets
     train_dataset = TrainDataset(
         data_dir=f"{config.data_dir}/train",
-        input_size=config.input_size,
         data_range=config.data_range,
     )
     val_dataset = ValidationDataset(
         data_dir=f"{config.data_dir}/valid",
-        input_size=config.input_size,
         data_range=config.data_range,
     )
 
@@ -487,12 +405,8 @@ def main() -> None:
         val_loader=val_loader,
     )
 
-    # Calculate epochs from iterations
-    steps_per_epoch = len(train_loader)
-    epochs = config.iterations // steps_per_epoch
-
     # Train
-    trainer.fit(epochs=epochs)
+    trainer.fit(epochs=config.epochs)
 
 
 if __name__ == "__main__":

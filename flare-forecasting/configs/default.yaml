@@ -31,7 +31,13 @@ class_weight: true  # Use class weights for imbalanced data
 # Data
 input_size: 1024
 data_dir: ./data
-flare_threshold: C1.0  # Minimum flare class
+mag_range: 1000.0  # Magnetogram normalization: / 1000
+
+# Flare threshold for binary classification
+# "c": c,m,x = flare (positive), no = no flare
+# "m": m,x = flare (positive), no,c = no flare
+# "x": x = flare (positive), no,c,m = no flare
+flare_threshold: c
 
 # Data augmentation
 augmentation: true
@@ -40,6 +46,7 @@ random_rotation: true
 
 # Output
 save_dir: ./checkpoints
+log_dir: ./logs
 log_interval: 50
 save_interval: 10
 

@@ -3,8 +3,11 @@
 
 # Model architecture
 model_type: fcn  # fcn or cnn
-in_channels: 3   # AIA 17.1, 19.3, 21.1 nm
-out_channels: 3  # AIA 9.4, 13.1, 33.5 nm
+
+# Wavelength selection (comma-separated)
+# Available: 94, 131, 171, 193, 211, 335
+input_wavelengths: "171,193,211"   # 3 input channels
+output_wavelengths: "94,131,335"   # 3 output channels
 
 # Training parameters
 epochs: 100
@@ -17,11 +20,10 @@ loss_type: mse  # mse or l1
 
 # Data
 data_dir: ./data
-train_ratio: 0.8
-val_ratio: 0.1
 
 # Output
 save_dir: ./checkpoints
+log_dir: ./logs
 log_interval: 100
 save_interval: 10
 

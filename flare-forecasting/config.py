@@ -44,7 +44,13 @@ class TrainConfig(BaseConfig):
     # Data
     input_size: int = 1024
     data_dir: str = "./data"
-    flare_threshold: str = "C1.0"  # Minimum flare class
+    mag_range: float = 1000.0  # Magnetogram normalization: / 1000
+
+    # Flare threshold for binary classification
+    # "c": c,m,x = flare (positive), no = no flare
+    # "m": m,x = flare (positive), no,c = no flare
+    # "x": x = flare (positive), no,c,m = no flare
+    flare_threshold: str = "c"
 
     # Data augmentation
     augmentation: bool = True
@@ -53,8 +59,12 @@ class TrainConfig(BaseConfig):
 
     # Output
     save_dir: str = "./checkpoints"
+    log_dir: str = "./logs"
     log_interval: int = 50
     save_interval: int = 10
+
+    # Checkpoint (for resuming or validation)
+    checkpoint_path: str = "./checkpoints/checkpoint_best.pth"
 
     # Device
     device: str = "cuda"
@@ -72,18 +82,19 @@ class InferenceConfig(BaseConfig):
     growth_rate: int = 16
     num_modules: int = 4
     blocks_per_module: int = 6
-    checkpoint_path: str = "./checkpoints/best_model.pth"
+    checkpoint_path: str = "./checkpoints/checkpoint_best.pth"
 
     # Data
-    input_size: int = 1024
-    input_path: str = "./data/test"
+    data_dir: str = "./data"
+    mag_range: float = 1000.0
 
     # Output
-    output_path: str = "./results"
+    output_dir: str = "./results"
     threshold: float = 0.5  # Probability threshold for positive class
 
     # Device
     device: str = "cuda"
+    batch_size: int = 16
 
 
 if __name__ == "__main__":

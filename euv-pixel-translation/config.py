@@ -16,8 +16,11 @@ class TrainConfig(BaseConfig):
 
     # Model architecture
     model_type: str = "fcn"  # "fcn" or "cnn"
-    in_channels: int = 3  # AIA 17.1, 19.3, 21.1 nm
-    out_channels: int = 3  # AIA 9.4, 13.1, 33.5 nm
+
+    # Wavelength selection (comma-separated)
+    # Available: 94, 131, 171, 193, 211, 335
+    input_wavelengths: str = "171,193,211"   # 3 input channels
+    output_wavelengths: str = "94,131,335"   # 3 output channels
 
     # Training parameters
     epochs: int = 100
@@ -30,17 +33,39 @@ class TrainConfig(BaseConfig):
 
     # Data
     data_dir: str = "./data"
-    train_ratio: float = 0.8
-    val_ratio: float = 0.1
 
     # Output
     save_dir: str = "./checkpoints"
+    log_dir: str = "./logs"
     log_interval: int = 100
     save_interval: int = 10
+
+    # Checkpoint (for resuming or validation)
+    checkpoint_path: str = "./checkpoints/checkpoint_best.pth"
 
     # Device
     device: str = "cuda"
     num_workers: int = 4
+
+    @property
+    def input_wavelength_list(self) -> list:
+        """Parse input_wavelengths string to list of integers."""
+        return [int(w.strip()) for w in self.input_wavelengths.split(",")]
+
+    @property
+    def output_wavelength_list(self) -> list:
+        """Parse output_wavelengths string to list of integers."""
+        return [int(w.strip()) for w in self.output_wavelengths.split(",")]
+
+    @property
+    def in_channels(self) -> int:
+        """Number of input channels based on selected wavelengths."""
+        return len(self.input_wavelength_list)
+
+    @property
+    def out_channels(self) -> int:
+        """Number of output channels based on selected wavelengths."""
+        return len(self.output_wavelength_list)
 
 
 @dataclass
@@ -49,24 +74,38 @@ class InferenceConfig(BaseConfig):
 
     # Model
     model_type: str = "fcn"
-    in_channels: int = 3
-    out_channels: int = 3
-    checkpoint_path: str = "./checkpoints/best_model.pth"
+    input_wavelengths: str = "171,193,211"
+    output_wavelengths: str = "94,131,335"
+    checkpoint_path: str = "./checkpoints/checkpoint_best.pth"
 
     # Data
-    input_path: str = "./data/input"
-    output_path: str = "./data/output"
+    data_dir: str = "./data"
+    output_dir: str = "./results"
 
     # Device
     device: str = "cuda"
     batch_size: int = 1
 
+    @property
+    def input_wavelength_list(self) -> list:
+        return [int(w.strip()) for w in self.input_wavelengths.split(",")]
+
+    @property
+    def output_wavelength_list(self) -> list:
+        return [int(w.strip()) for w in self.output_wavelengths.split(",")]
+
+    @property
+    def in_channels(self) -> int:
+        return len(self.input_wavelength_list)
+
+    @property
+    def out_channels(self) -> int:
+        return len(self.output_wavelength_list)
+
 
 if __name__ == "__main__":
-    # Test configuration
     config = TrainConfig()
     print(config)
-
-    # Test CLI
-    config_cli = TrainConfig.from_args(["--lr", "0.001", "--epochs", "50"])
-    print(f"\nFrom CLI: lr={config_cli.lr}, epochs={config_cli.epochs}")
+    print(f"Input wavelengths: {config.input_wavelength_list}")
+    print(f"Output wavelengths: {config.output_wavelength_list}")
+    print(f"in_channels: {config.in_channels}, out_channels: {config.out_channels}")

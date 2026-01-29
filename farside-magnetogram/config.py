@@ -41,6 +41,9 @@ class TrainConfig(BaseConfig):
     log_interval: int = 100
     save_interval: int = 10
 
+    # Checkpoint (for resuming or validation)
+    checkpoint_path: str = "./checkpoints/checkpoint_best.pth"
+
     # Device
     device: str = "cuda"
     num_workers: int = 4
@@ -54,13 +57,18 @@ class InferenceConfig(BaseConfig):
     in_channels: int = 1
     out_channels: int = 1
     ngf: int = 64
-    checkpoint_path: str = "./checkpoints/generator.pth"
+    checkpoint_path: str = "./checkpoints/checkpoint_best.pth"
 
     # Data
     input_size: int = 1024
+    data_dir: str = "./data"
     input_path: str = "./data/stereo"
-    output_path: str = "./data/farside"
+    output_path: str = "./results"
     data_range: float = 100.0
+    batch_size: int = 1
+
+    # Far-side mode (EUVI 304 nm without target)
+    farside: bool = False
 
     # Device
     device: str = "cuda"
