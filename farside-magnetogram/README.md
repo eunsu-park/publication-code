@@ -336,6 +336,44 @@ Original implementation: [https://github.com/tykimos/SolarMagGAN](https://github
 }
 ```
 
+### AI-based Solar Farside Vector Magnetograms from Multi-spacecraft EUV (2025)
+
+**Title:** Artificial-intelligence-based Reconstruction of Solar Farside Vector Magnetograms from Multispacecraft Extreme-ultraviolet Data
+
+**Authors:** Hyun-Jin Jeong, Eunsu Park, Harim Lee, Junmu Youn, Mingyu Jeon, Yong-Jae Moon, Stefaan Poedts, Francesco Carella, Haopeng Wang, Daeil Kim, Youngjae Kim, Jihye Kang
+
+**Journal:** The Astrophysical Journal Supplement Series, 281:63 (14pp), 2025 December
+
+**DOI:** [10.3847/1538-4365/ae21b8](https://doi.org/10.3847/1538-4365/ae21b8)
+
+**Type:** Major Update (Vector Magnetogram Generation from Multi-spacecraft EUV)
+
+**Summary:** This paper extends farside magnetogram generation to full vector magnetic fields using Pix2PixCC architecture:
+
+- **Vector Field Generation:** Produces all three components (Br, Bθ, Bφ) of solar farside magnetic fields
+- **Multi-spacecraft Input:** EUV 304 & 171 Å from STEREO-A, STEREO-B, and Solar Orbiter (SolO) with SFT model reference data
+- **Performance (SDO test):** Average Cvec=0.89, CCS=0.76, Pearson CC for Br=0.91, Bθ=0.77, Bφ=0.77 (after 8×8 binning)
+- **Direct Validation:** First comparison with SDO/HMI during STEREO-A (2023) and SolO (2022) inferior conjunctions
+- **AR Tracking:** Demonstrated tracking of NOAA AR 11339 and 13848 with derived vector parameters (USFLUX, TOTUSJH, ABSNJZH)
+- **Application:** Enables continuous monitoring of solar vector magnetic fields from farside to frontside
+
+**Reference Code:** [https://github.com/JeongHyunJin/Pix2PixCC](https://github.com/JeongHyunJin/Pix2PixCC) (Zenodo: doi:10.5281/zenodo.17573370)
+
+```bibtex
+@article{Jeong_2025,
+    title={Artificial-intelligence-based Reconstruction of Solar Farside Vector Magnetograms from Multispacecraft Extreme-ultraviolet Data},
+    author={Jeong, Hyun-Jin and Park, Eunsu and Lee, Harim and Youn, Junmu and Jeon, Mingyu and Moon, Yong-Jae and Poedts, Stefaan and Carella, Francesco and Wang, Haopeng and Kim, Daeil and Kim, Youngjae and Kang, Jihye},
+    journal={The Astrophysical Journal Supplement Series},
+    volume={281},
+    number={2},
+    pages={63},
+    year={2025},
+    month={dec},
+    publisher={The American Astronomical Society},
+    doi={10.3847/1538-4365/ae21b8}
+}
+```
+
 ## License
 
 MIT License

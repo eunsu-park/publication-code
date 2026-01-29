@@ -227,6 +227,44 @@ magnetogram = torch.randn(1, 1, 1024, 1024)
 generated_euv = generator(magnetogram)
 ```
 
+## Related Publications
+
+### Selection of UV/EUV Channels for Solar Satellite Missions (2021)
+
+**Title:** Selection of Three (Extreme)Ultraviolet Channels for Solar Satellite Missions by Deep Learning
+
+**Authors:** Daye Lim, Yong-Jae Moon, Eunsu Park, Jin-Yi Lee
+
+**Journal:** The Astrophysical Journal Letters, 915:L31 (9pp), 2021 July 10
+
+**DOI:** [10.3847/2041-8213/ac0d54](https://doi.org/10.3847/2041-8213/ac0d54)
+
+**Type:** Follow-up Study (Optimal Channel Selection for UV/EUV Translation)
+
+**Summary:** This paper compares 170 deep learning models for image translation among SDO/AIA 9 channels to find optimal channel combinations:
+
+- **170 Models Developed:** 72 single-channel, 56 double-channel, 42 triple-channel input models
+- **Single-channel Best:** 131 Å (average CC = 0.84)
+- **Double-channel Best:** 131 + 1600 Å (average CC = 0.95)
+- **Triple-channel Best:** 131 + 1600 + 304 Å (average CC = 0.97, minimum CC = 0.96)
+- **Physical Interpretation:** The three channels represent coronal (131 Å), upper photospheric (1600 Å), and chromospheric (304 Å) layers
+- **Application:** Results can guide UV/EUV channel selection for future solar satellite missions
+
+```bibtex
+@article{Lim_2021,
+    title={Selection of Three (Extreme)Ultraviolet Channels for Solar Satellite Missions by Deep Learning},
+    author={Lim, Daye and Moon, Yong-Jae and Park, Eunsu and Lee, Jin-Yi},
+    journal={The Astrophysical Journal Letters},
+    volume={915},
+    number={2},
+    pages={L31},
+    year={2021},
+    month={jul},
+    publisher={The American Astronomical Society},
+    doi={10.3847/2041-8213/ac0d54}
+}
+```
+
 ## Citation
 
 ```bibtex

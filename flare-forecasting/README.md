@@ -195,6 +195,46 @@ output = model(magnetogram)
 prediction = torch.argmax(output, dim=1)  # 0: No-flare, 1: Flare
 ```
 
+## Related Publications
+
+### Visual Explanation of Deep Learning Flare Model (2021)
+
+**Title:** Visual Explanation of a Deep Learning Solar Flare Forecast Model and Its Relationship to Physical Parameters
+
+**Authors:** Kangwoo Yi, Yong-Jae Moon, Daye Lim, Eunsu Park, Harim Lee
+
+**Journal:** The Astrophysical Journal, 910:8 (11pp), 2021 March 20
+
+**DOI:** [10.3847/1538-4357/abdebe](https://doi.org/10.3847/1538-4357/abdebe)
+
+**Type:** Follow-up Study (Model Interpretation using Attribution Methods)
+
+**Summary:** This paper presents visual explanation of deep learning flare forecast model using CNN attribution methods:
+
+- **Attribution Methods:** Guided backpropagation and Grad-CAM applied to interpret model predictions
+- **Key Finding - PIL:** Polarity Inversion Line (PIL) identified as important feature for flare prediction
+- **Grad-CAM Analysis:** Active regions with high Grad-CAM values produce more flares
+- **SHARP Correlation:** Nine SHARP parameters highly correlated with Grad-CAM values:
+  - TOTUSJZ (r=0.72), TOTUSJH (r=0.71), USFLUX (r=0.70)
+  - TOTPOT (r=0.62), MEANPOT (r=0.57), MEANSHR (r=0.57)
+  - SHRGT45 (r=0.56), SAVNCPP (r=0.55), ABSNJZH (r=0.52)
+- **Performance:** TSS = 0.65 for daily C-, M-, X-class flare occurrence prediction
+
+```bibtex
+@article{Yi_2021,
+    title={Visual Explanation of a Deep Learning Solar Flare Forecast Model and Its Relationship to Physical Parameters},
+    author={Yi, Kangwoo and Moon, Yong-Jae and Lim, Daye and Park, Eunsu and Lee, Harim},
+    journal={The Astrophysical Journal},
+    volume={910},
+    number={1},
+    pages={8},
+    year={2021},
+    month={mar},
+    publisher={The American Astronomical Society},
+    doi={10.3847/1538-4357/abdebe}
+}
+```
+
 ## Citation
 
 ```bibtex
