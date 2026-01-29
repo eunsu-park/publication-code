@@ -24,6 +24,7 @@ data_range: 100.0  # Magnetogram range: -100 to +100 G
 
 # Output
 save_dir: ./checkpoints
+log_dir: ./logs
 log_interval: 100
 save_interval: 10
 

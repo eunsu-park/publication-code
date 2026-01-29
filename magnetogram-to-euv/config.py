@@ -16,7 +16,6 @@ class TrainConfig(BaseConfig):
 
     # Model architecture
     in_channels: int = 1  # Magnetogram
-    out_channels: int = 1  # Single EUV/UV passband (train separately for each)
     ngf: int = 64  # Generator base features
     ndf: int = 64  # Discriminator base features
 
@@ -33,22 +32,35 @@ class TrainConfig(BaseConfig):
     # Loss weights
     lambda_l1: float = 100.0
 
-    # Target passband (one of 9 passbands)
+    # Target wavelengths (comma-separated, one or more)
     # Options: 94, 131, 171, 193, 211, 304, 335, 1600, 1700
-    target_passband: int = 304
+    # Example: "304" for single, "94,131,171" for multi-channel
+    target_wavelengths: str = "304"
 
     # Data
     input_size: int = 1024
     data_dir: str = "./data"
+    mag_range: float = 1000.0  # Magnetogram normalization: / 1000
 
     # Output
     save_dir: str = "./checkpoints"
+    log_dir: str = "./logs"
     log_interval: int = 100
     save_interval: int = 10
 
     # Device
     device: str = "cuda"
     num_workers: int = 4
+
+    @property
+    def wavelength_list(self) -> list:
+        """Parse target_wavelengths string to list of integers."""
+        return [int(w.strip()) for w in self.target_wavelengths.split(",")]
+
+    @property
+    def out_channels(self) -> int:
+        """Number of output channels based on selected wavelengths."""
+        return len(self.wavelength_list)
 
 
 @dataclass

@@ -3,7 +3,6 @@
 
 # Model architecture
 in_channels: 1   # Magnetogram
-out_channels: 1  # Single EUV/UV passband
 ngf: 64          # Generator base features
 ndf: 64          # Discriminator base features
 
@@ -20,16 +19,22 @@ beta2: 0.999
 # Loss weights
 lambda_l1: 100.0
 
-# Target passband (one of 9 passbands)
+# Target wavelengths (comma-separated, one or more)
 # Options: 94, 131, 171, 193, 211, 304, 335, 1600, 1700
-target_passband: 304
+# Examples:
+#   "304"           -> single channel output
+#   "94,131,171"    -> 3 channel output (concat)
+#   "94,131,171,193,211,304,335,1600,1700" -> all 9 channels
+target_wavelengths: "304"
 
 # Data
 input_size: 1024
 data_dir: ./data
+mag_range: 1000.0  # Magnetogram normalization: / 1000
 
 # Output
 save_dir: ./checkpoints
+log_dir: ./logs
 log_interval: 100
 save_interval: 10
 

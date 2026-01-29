@@ -37,6 +37,7 @@ class TrainConfig(BaseConfig):
 
     # Output
     save_dir: str = "./checkpoints"
+    log_dir: str = "./logs"
     log_interval: int = 100
     save_interval: int = 10
 
